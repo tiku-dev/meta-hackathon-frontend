@@ -443,6 +443,7 @@ function HodDashboard() {
       <QuickLinks
         links={[
           { to: "/offerings", label: "Department offerings", hint: "Propose & review offerings", icon: "layers" },
+          { to: "/hod/marks-upload", label: "Marks upload (CSV)", hint: "CA & exam marks by matricule", icon: "upload" },
           { to: "/results-review", label: "Approve results", hint: "Review submitted marks", icon: "award" },
           { to: "/admin/students", label: "Department students", hint: "Students in your programs", icon: "users" },
           { to: "/timetable", label: "Timetable", hint: "Sessions for your classes", icon: "calendar" },

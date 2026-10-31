@@ -16,6 +16,7 @@ import {
 import { TimetablePage } from "./pages/timetable";
 import { ClassDetailPage, MyClassesPage } from "./pages/teaching";
 import { OfferingsPage } from "./pages/offerings";
+import { HodMarksUploadPage } from "./pages/hod-marks";
 import { ResultsReviewPage } from "./pages/results";
 import { LecturersPage, StudentsPage } from "./pages/admin-people";
 import { AcademicsPage } from "./pages/admin-academics";
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/offerings" element={<RequireRole roles={["lecturer", "hod", ...STAFF]}><OfferingsPage /></RequireRole>} />
               <Route path="/results-review" element={<RequireRole roles={REVIEW}><ResultsReviewPage /></RequireRole>} />
               <Route path="/hod" element={<RequireRole roles={["hod"]}><HodPage /></RequireRole>} />
+              <Route path="/hod/marks-upload" element={<RequireRole roles={["hod"]}><HodMarksUploadPage /></RequireRole>} />
 
               {/* Administration */}
               <Route path="/admin/students" element={<RequireRole roles={PEOPLE}><StudentsPage /></RequireRole>} />

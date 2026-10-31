@@ -195,6 +195,8 @@ export function ClassDetailPage() {
 /* ------------------------------ Marks tab ------------------------------ */
 
 function MarksTab({ offeringId, data, policy, reload, toast }) {
+  const auth = useAuth();
+  const isHod = auth.has("hod");
   const rosterReq = useApi(`/admin/course-offerings/${offeringId}/roster/`);
   const savedResults = useMemo(() => data?.results || [], [data]);
   const resultByRegistration = useMemo(() => {
@@ -313,7 +315,13 @@ function MarksTab({ offeringId, data, policy, reload, toast }) {
       setErrors(failed);
       if (failed.length) toast.error(`${failed.length} row(s) could not be saved.`);
       else {
-        toast.success(submit ? "Marks submitted for HOD review." : "Draft marks saved.");
+        toast.success(
+          submit
+            ? isHod
+              ? "Marks submitted — approve & publish them from Results review."
+              : "Marks submitted for HOD review."
+            : "Draft marks saved.",
+        );
         setDirty({});
       }
       reload();
@@ -348,7 +356,7 @@ function MarksTab({ offeringId, data, policy, reload, toast }) {
             Save drafts
           </Button>
           <Button loading={saving} disabled={saving || formLocked} onClick={() => save(true)} icon="send">
-            Submit for HOD review
+            {isHod ? "Submit marks" : "Submit for HOD review"}
           </Button>
         </div>
       </div>

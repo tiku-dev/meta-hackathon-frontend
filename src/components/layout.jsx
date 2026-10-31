@@ -48,7 +48,10 @@ export const NAV_SECTIONS = [
   {
     title: "Department",
     roles: ["hod"],
-    items: [{ to: "/hod", label: "Department overview", icon: "building" }],
+    items: [
+      { to: "/hod", label: "Department overview", icon: "building" },
+      { to: "/hod/marks-upload", label: "Marks upload (CSV)", icon: "upload" },
+    ],
   },
   {
     title: "Administration",
