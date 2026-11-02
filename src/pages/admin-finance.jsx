@@ -21,7 +21,19 @@ import { useLookup } from "../lib/lookups";
 import { formatDateTime, formatMoney } from "../lib/format";
 
 const feeFields = [
-  { name: "fee_type", label: "Fee type", required: true, placeholder: "registration / tuition / …" },
+  {
+    name: "fee_type",
+    label: "Fee type",
+    required: true,
+    type: "select",
+    options: [
+      { value: "registration", label: "Tuition / semester fees (registration threshold)" },
+      { value: "registration_fee", label: "One-time registration fee (new students, paid once)" },
+      { value: "tuition", label: "Tuition" },
+      { value: "other", label: "Other" },
+    ],
+    hint: "“One-time registration fee” is charged once to NEW students before any fee payment; the DB records who has paid so it is never charged twice.",
+  },
   { name: "amount", label: "Amount", type: "number", required: true, min: 0, step: "0.01" },
   {
     name: "currency",

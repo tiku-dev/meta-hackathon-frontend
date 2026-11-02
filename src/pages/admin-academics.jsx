@@ -75,6 +75,7 @@ export function AcademicsPage() {
         { key: "unit_type", header: "Type" },
         { key: "code", header: "Code", render: (u) => u.code || "—" },
         { key: "parent", header: "Parent", render: (u, ctx) => ctx.label(ctx.lookups.units, u.parent) },
+        { key: "course_count", header: "Courses", render: (u) => u.course_count ?? 0 },
         { key: "is_active", header: "Active", render: (u) => boolText(u.is_active) },
       ],
     },

@@ -98,7 +98,7 @@ export function RegistrationPage() {
     <div>
       <PageHeader
         title="Course registration"
-        subtitle="Select published courses for your program and level. The backend re-checks the fee threshold, deadline, capacity, timetable conflicts and the credit cap when you submit."
+        subtitle="Select published courses from any department. All credits — yours and other departments' — count toward your one credit maximum. The backend re-checks the fee threshold, deadline, capacity, timetable conflicts and the credit cap when you submit."
       />
 
       {(data.reasons || []).length > 0 ? (
@@ -107,7 +107,7 @@ export function RegistrationPage() {
             {data.reasons.map((r) => (
               <li key={r.code}>
                 {r.message}
-                {r.code === "PAYMENT_THRESHOLD_NOT_MET" ? (
+                {["PAYMENT_THRESHOLD_NOT_MET", "REGISTRATION_FEE_REQUIRED"].includes(r.code) ? (
                   <>
                     {" "}
                     <Link to="/fees" className="font-semibold underline">
@@ -162,16 +162,30 @@ export function RegistrationPage() {
           </div>
           {offerings.length === 0 ? (
             <p className="px-5 py-8 text-sm text-slate-400">
-              No published offerings for your program/level in the current semester yet.
+              No published offerings in the current semester yet.
             </p>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {offerings.map((o) => {
+              {offerings.map((o, idx) => {
+                const showDeptHeader =
+                  idx === 0 || offerings[idx - 1].department_name !== o.department_name;
                 const already = registeredIds.has(o.id);
                 const checked = selected.has(o.id);
                 const disabled = !o.available || already;
                 return (
                   <li key={o.id}>
+                    {showDeptHeader ? (
+                      <div className="flex items-center gap-2 bg-slate-50 px-5 py-2">
+                        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          {o.department_name || "Other courses"}
+                        </span>
+                        {o.is_cross_department ? (
+                          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-700">
+                            Cross-department
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <label
                       className={`flex items-start gap-3 px-5 py-3.5 ${disabled ? "opacity-75" : "cursor-pointer hover:bg-brand-50/50"}`}
                     >
@@ -189,6 +203,8 @@ export function RegistrationPage() {
                         </span>
                         <span className="mt-0.5 block text-xs text-slate-400">
                           {o.credits} credits · {o.enrolled_count}/{o.capacity} enrolled
+                          {o.department_name ? ` · ${o.department_name}` : ""}
+                          {o.is_cross_department ? " · Cross-department" : ""}
                           {o.lecturer_name ? ` · ${o.lecturer_name}` : ""}
                           {o.semester_label ? ` · ${o.semester_label}` : ""}
                         </span>
@@ -245,6 +261,7 @@ export function RegistrationPage() {
                     </span>
                     <span className="text-xs text-slate-400">
                       {r.credits} credits · {formatDateTime(r.registered_at)}
+                      {r.department_name ? ` · ${r.department_name}` : ""}
                     </span>
                   </span>
                   <Button size="sm" variant="dangerGhost" onClick={() => setDropping(r)}>
@@ -283,6 +300,9 @@ export function FeesPage() {
 
   const data = fees.data || {};
   const invoices = data.invoices || [];
+  const regFee = data.registration_fee || null;
+  const regFeeOwed = Boolean(regFee?.required);
+  const regFeeInvoice = regFee?.invoice || null;
   const eligibility = data.eligibility || {};
   const payment = eligibility.payment || {};
   const paymentOptions = data.payment_options || {};
@@ -381,6 +401,20 @@ export function FeesPage() {
         />
       </div>
 
+      {regFeeOwed ? (
+        <Alert tone="warning" title="One-time registration fee — pay this first" className="mb-4">
+          As a new student you must pay the registration fee of{" "}
+          <strong>{formatMoney(regFee.amount, regFee.currency)}</strong> before paying school
+          fees. You pay it <strong>once only</strong> — once it is verified, fee payments unlock
+          and you will never be charged it again.
+        </Alert>
+      ) : regFee?.paid ? (
+        <Alert tone="success" className="mb-4">
+          One-time registration fee: {regFee.status === "waived" ? "waived by finance" : "paid"} —
+          you will never be charged it again.
+        </Alert>
+      ) : null}
+
       {data.current_invoice ? (
         <Alert tone={eligibility.eligible ? "success" : "warning"} className="mb-4">
           {eligibility.eligible
@@ -395,17 +429,30 @@ export function FeesPage() {
       )}
 
       <div className="space-y-4">
-        {invoices.map((inv) => (
+        {invoices.map((inv) => {
+          const isRegFeeInvoice = regFeeInvoice && inv.id === regFeeInvoice.id;
+          const lockedByRegFee = regFeeOwed && !isRegFeeInvoice;
+          return (
           <Card key={inv.id}>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h3 className="font-semibold text-slate-900">Invoice #{inv.id}</h3>
+                  <h3 className="font-semibold text-slate-900">
+                    {isRegFeeInvoice
+                      ? `One-time registration fee — Invoice #${inv.id}`
+                      : `Invoice #${inv.id}`}
+                  </h3>
                   <StatusBadge status={inv.status} />
+                  {isRegFeeInvoice ? (
+                    <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-bold text-gold-700">
+                      Pay first · once only
+                    </span>
+                  ) : null}
                 </div>
                 <p className="mt-1 text-sm text-slate-500">
-                  Due {formatDate(inv.due_date)} · Required for registration:{" "}
-                  {formatMoney(inv.required_for_registration, inv.currency)}
+                  {isRegFeeInvoice
+                    ? "Pay this once before school fees — you will never be charged it again."
+                    : `Due ${formatDate(inv.due_date)} · Required for registration: ${formatMoney(inv.required_for_registration, inv.currency)}`}
                 </p>
                 {inv.alt_amount ? (
                   <p className="text-xs text-slate-400">
@@ -425,7 +472,12 @@ export function FeesPage() {
             <div className="mt-3">
               <ProgressBar value={inv.amount_paid} max={inv.total_due || 1} />
             </div>
-            {num(inv.balance) > 0 && inv.status !== "waived" && inv.status !== "cancelled" ? (
+            {lockedByRegFee ? (
+              <p className="mt-4 flex items-center gap-2 text-sm font-medium text-amber-700">
+                <Icon name="alert" size={16} /> Locked — pay your one-time registration fee
+                above first. It is charged once only.
+              </p>
+            ) : num(inv.balance) > 0 && inv.status !== "waived" && inv.status !== "cancelled" ? (
               <div className="mt-4 flex flex-wrap gap-2">
                 {stripeEnabled ? (
                   <Button
@@ -485,7 +537,8 @@ export function FeesPage() {
               reference, amount and currency.
             </p>
           </Card>
-        ))}
+          );
+        })}
         {invoices.length === 0 ? (
           <EmptyState icon="wallet" title="No invoices yet" message="Invoices appear here once finance issues them for a semester." />
         ) : null}

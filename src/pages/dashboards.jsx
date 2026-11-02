@@ -156,7 +156,7 @@ function StudentDashboard() {
                     <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
                     <span>
                       {r.message}{" "}
-                      {r.code === "PAYMENT_THRESHOLD_NOT_MET" ? (
+                      {["PAYMENT_THRESHOLD_NOT_MET", "REGISTRATION_FEE_REQUIRED"].includes(r.code) ? (
                         <Link to="/fees" className="font-semibold underline">
                           Pay fees
                         </Link>
