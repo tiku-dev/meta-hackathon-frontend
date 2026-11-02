@@ -199,6 +199,9 @@ function StudentDashboard() {
             <Link to="/results" className="rounded-lg bg-gold-100 py-2.5 font-semibold text-gold-700 hover:bg-gold-200">
               My results
             </Link>
+            <Link to="/contact-admin" className="col-span-2 rounded-lg bg-red-50 py-2.5 font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-100">
+              Emergency? Contact administration
+            </Link>
           </div>
         </Card>
       </div>
@@ -321,6 +324,7 @@ function AdminDashboard() {
           { to: "/admin/academics", label: "Academic structure", hint: "Units, programs, semesters", icon: "building" },
           { to: "/admin/reports", label: "Reports", hint: "Students, fees, payments, results", icon: "chart" },
           { to: "/announcements", label: "Announcements", hint: "Reach every audience", icon: "megaphone" },
+          { to: "/admin/emergency-contacts", label: "Emergency contacts", hint: "Urgent student messages for admin", icon: "lifeRing" },
           { to: "/admin/audit", label: "Audit log", hint: "Every sensitive action, recorded", icon: "history" },
         ]}
       />

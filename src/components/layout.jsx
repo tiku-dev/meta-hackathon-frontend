@@ -23,6 +23,7 @@ export const NAV_SECTIONS = [
       { to: "/receipts", label: "Receipts", icon: "receipt" },
       { to: "/results", label: "My results", icon: "award" },
       { to: "/transcript", label: "Transcript", icon: "file" },
+      { to: "/contact-admin", label: "Contact administration", icon: "lifeRing" },
     ],
   },
   {
@@ -78,6 +79,14 @@ export const NAV_SECTIONS = [
         icon: "award",
         roles: ["admin", "super_admin", "registrar"],
       },
+      {
+        to: "/admin/emergency-contacts",
+        label: "Emergency contacts",
+        icon: "lifeRing",
+        roles: ["admin", "super_admin"],
+        badgeApi: "/admin/emergency-contacts/summary/",
+        badgeKey: "unread",
+      },
     ],
   },
   {
@@ -105,6 +114,30 @@ function visibleSections(roles) {
     ...section,
     items: section.items.filter((item) => !item.roles || has(...item.roles)),
   })).filter((section) => section.items.length > 0 && (!section.roles || has(...section.roles)));
+}
+
+function NavBadge({ path, badgeKey }) {
+  const [count, setCount] = useState(0);
+  const location = useLocation();
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api(path)
+        .then((d) => alive && setCount(Number(d?.[badgeKey] || 0)))
+        .catch(() => {});
+    load();
+    const t = setInterval(load, 60000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [path, badgeKey, location.pathname]);
+  if (!count) return null;
+  return (
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
 }
 
 function NotificationBell() {
@@ -187,6 +220,9 @@ export function AppLayout() {
                   >
                     <Icon name={item.icon} size={17} className="shrink-0 opacity-90" />
                     {item.label}
+                    {item.badgeApi ? (
+                      <NavBadge path={item.badgeApi} badgeKey={item.badgeKey} />
+                    ) : null}
                   </NavLink>
                 </li>
               ))}

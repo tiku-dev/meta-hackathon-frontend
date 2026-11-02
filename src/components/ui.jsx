@@ -124,6 +124,8 @@ const STATUS_TONES = {
   hod_approved: "bg-amber-50 text-amber-700 ring-amber-200",
   created: "bg-amber-50 text-amber-700 ring-amber-200",
   requested: "bg-amber-50 text-amber-700 ring-amber-200",
+  in_progress: "bg-sky-50 text-sky-700 ring-sky-200",
+  resolved: "bg-brand-50 text-brand-700 ring-brand-200",
   maybe: "bg-amber-50 text-amber-700 ring-amber-200",
   late: "bg-amber-50 text-amber-700 ring-amber-200",
   unpaid: "bg-red-50 text-red-700 ring-red-200",

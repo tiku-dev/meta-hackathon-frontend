@@ -24,7 +24,9 @@ import { AcademicsPage } from "./pages/admin-academics";
 import { FinancePage } from "./pages/admin-finance";
 import { AuditPage, ReportsPage, ResultsAdminPage } from "./pages/admin-insights";
 import {
+  AdminEmergencyContactsPage,
   AnnouncementsPage,
+  ContactAdminPage,
   EventsPage,
   HodPage,
   NotificationsPage,
@@ -55,6 +57,7 @@ export default function App() {
               <Route path="/receipts" element={<RequireRole roles={["student"]}><ReceiptsPage /></RequireRole>} />
               <Route path="/results" element={<RequireRole roles={["student"]}><ResultsPage /></RequireRole>} />
               <Route path="/transcript" element={<RequireRole roles={["student"]}><TranscriptPage /></RequireRole>} />
+              <Route path="/contact-admin" element={<RequireRole roles={["student"]}><ContactAdminPage /></RequireRole>} />
               <Route path="/payments/return" element={<PaymentReturnPage />} />
               <Route path="/timetable" element={<TimetablePage />} />
 
@@ -75,6 +78,7 @@ export default function App() {
               <Route path="/admin/results-admin" element={<RequireRole roles={RESULTS_ADMIN}><ResultsAdminPage /></RequireRole>} />
               <Route path="/admin/reports" element={<RequireRole roles={["admin", "super_admin", "finance", "registrar"]}><ReportsPage /></RequireRole>} />
               <Route path="/admin/audit" element={<RequireRole roles={ADMIN_ONLY}><AuditPage /></RequireRole>} />
+              <Route path="/admin/emergency-contacts" element={<RequireRole roles={ADMIN_ONLY}><AdminEmergencyContactsPage /></RequireRole>} />
 
               {/* Communication */}
               <Route path="/announcements" element={<AnnouncementsPage />} />
