@@ -19,6 +19,7 @@ import { OfferingsPage } from "./pages/offerings";
 import { HodMarksUploadPage } from "./pages/hod-marks";
 import { ResultsReviewPage } from "./pages/results";
 import { LecturersPage, StudentsPage } from "./pages/admin-people";
+import { HodsPage } from "./pages/admin-hods";
 import { AcademicsPage } from "./pages/admin-academics";
 import { FinancePage } from "./pages/admin-finance";
 import { AuditPage, ReportsPage, ResultsAdminPage } from "./pages/admin-insights";
@@ -68,6 +69,7 @@ export default function App() {
               {/* Administration */}
               <Route path="/admin/students" element={<RequireRole roles={PEOPLE}><StudentsPage /></RequireRole>} />
               <Route path="/admin/lecturers" element={<RequireRole roles={ADMIN_ONLY}><LecturersPage /></RequireRole>} />
+              <Route path="/admin/hods" element={<RequireRole roles={ADMIN_ONLY}><HodsPage /></RequireRole>} />
               <Route path="/admin/academics" element={<RequireRole roles={["admin", "super_admin", "registrar", "coordinator"]}><AcademicsPage /></RequireRole>} />
               <Route path="/admin/finance" element={<RequireRole roles={["admin", "super_admin", "finance"]}><FinancePage /></RequireRole>} />
               <Route path="/admin/results-admin" element={<RequireRole roles={RESULTS_ADMIN}><ResultsAdminPage /></RequireRole>} />

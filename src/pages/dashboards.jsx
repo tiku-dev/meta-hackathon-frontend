@@ -314,6 +314,7 @@ function AdminDashboard() {
       <QuickLinks
         links={[
           { to: "/admin/students", label: "Students & matricules", hint: "Admissions, activation, CSV import", icon: "users" },
+          { to: "/admin/hods", label: "Heads of Department", hint: "Assign or remove an HOD per department", icon: "building" },
           { to: "/admin/finance", label: "Finance", hint: "Fee schedules, invoices, reconciliation", icon: "wallet" },
           { to: "/offerings", label: "Course offerings", hint: "Publish offerings & timetables", icon: "layers" },
           { to: "/results-review", label: "Results review", hint: "Publish, lock & correct results", icon: "award" },
@@ -443,7 +444,7 @@ function HodDashboard() {
       <QuickLinks
         links={[
           { to: "/offerings", label: "Department offerings", hint: "Propose & review offerings", icon: "layers" },
-          { to: "/hod/marks-upload", label: "Marks upload (CSV)", hint: "CA & exam marks by matricule", icon: "upload" },
+          { to: "/hod/marks-upload", label: "Marks upload", hint: "Form or CSV, by matricule", icon: "upload" },
           { to: "/results-review", label: "Approve results", hint: "Review submitted marks", icon: "award" },
           { to: "/admin/students", label: "Department students", hint: "Students in your programs", icon: "users" },
           { to: "/timetable", label: "Timetable", hint: "Sessions for your classes", icon: "calendar" },

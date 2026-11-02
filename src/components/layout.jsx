@@ -50,7 +50,7 @@ export const NAV_SECTIONS = [
     roles: ["hod"],
     items: [
       { to: "/hod", label: "Department overview", icon: "building" },
-      { to: "/hod/marks-upload", label: "Marks upload (CSV)", icon: "upload" },
+      { to: "/hod/marks-upload", label: "Marks upload", icon: "upload" },
     ],
   },
   {
@@ -64,6 +64,7 @@ export const NAV_SECTIONS = [
         roles: ["admin", "super_admin", "admissions", "registrar", "finance", "hod"],
       },
       { to: "/admin/lecturers", label: "Lecturers", icon: "cap", roles: ["admin", "super_admin"] },
+      { to: "/admin/hods", label: "Heads of Department", icon: "building", roles: ["admin", "super_admin"] },
       {
         to: "/admin/academics",
         label: "Academic structure",

@@ -19,7 +19,7 @@ import { formatDate } from "../lib/format";
 const studentFields = [
   { name: "first_name", label: "First name", required: true },
   { name: "last_name", label: "Last name", required: true },
-  { name: "email", label: "Email", type: "email", required: true, span: 2 },
+  { name: "email", label: "Email", type: "email", required: true },
   { name: "phone", label: "Phone" },
   { name: "date_of_birth", label: "Date of birth", type: "date" },
   { name: "gender", label: "Gender" },
@@ -321,7 +321,7 @@ export function LecturersPage() {
   );
 }
 
-function LinkUserModal({ lecturer, onClose, toast }) {
+export function LinkUserModal({ lecturer, onClose, toast, onLinked }) {
   const [userId, setUserId] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastLecturer, setLastLecturer] = useState(undefined);
@@ -341,6 +341,7 @@ function LinkUserModal({ lecturer, onClose, toast }) {
       });
       toast.success("Login account linked. The lecturer role was granted.");
       onClose();
+      onLinked?.();
     } catch (err) {
       toast.error(err.message);
     } finally {

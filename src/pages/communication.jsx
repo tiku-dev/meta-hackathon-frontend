@@ -473,7 +473,7 @@ export function HodPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { to: "/offerings", label: "Department offerings", hint: "Propose & review offerings", icon: "layers" },
-          { to: "/hod/marks-upload", label: "Marks upload (CSV)", hint: "CA & exam marks by matricule", icon: "upload" },
+          { to: "/hod/marks-upload", label: "Marks upload", hint: "Form or CSV, by matricule", icon: "upload" },
           { to: "/results-review", label: "Approve results", hint: "Submitted marks queue", icon: "award" },
           { to: "/admin/students", label: "Department students", hint: "Students in your programs", icon: "users" },
           { to: "/timetable", label: "Timetable", hint: "Sessions for your classes", icon: "calendar" },
