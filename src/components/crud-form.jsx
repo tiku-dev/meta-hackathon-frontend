@@ -61,6 +61,7 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // (Re)initialise whenever a different record is opened.
   const [lastRecord, setLastRecord] = useState(undefined);
@@ -76,6 +77,7 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
       });
       setForm(initial);
       setError("");
+      setFieldErrors({});
     } else {
       setForm(null);
     }
@@ -84,6 +86,12 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
   if (!record || !form) return null;
   const isEdit = Boolean(record.id);
   const set = (name, value) => {
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     setForm((s) => {
       const next = { ...s, [name]: value };
       if (name === "program") {
@@ -108,6 +116,7 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
     e.preventDefault();
     setSaving(true);
     setError("");
+    setFieldErrors({});
     try {
       let payload = { ...form };
       resource.fields.forEach((f) => {
@@ -123,16 +132,28 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
         }
       });
       if (resource.transformSubmit) payload = resource.transformSubmit(payload, record);
+      let result = null;
       if (isEdit) {
-        await api(`${resource.path}${record.id}/`, { method: "PATCH", body: payload });
+        result = await api(`${resource.path}${record.id}/`, { method: "PATCH", body: payload });
         toast.success(`${resource.singular} updated.`);
       } else {
-        await api(resource.path, { method: "POST", body: payload });
+        result = await api(resource.path, { method: "POST", body: payload });
         toast.success(`${resource.singular} created.`);
       }
-      onSaved();
+      onSaved?.(result, isEdit);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to save.");
+      if (err.details && typeof err.details === "object" && !Array.isArray(err.details)) {
+        const fe = {};
+        for (const [key, val] of Object.entries(err.details)) {
+          if (Array.isArray(val) && val.length > 0) {
+            fe[key] = typeof val[0] === "string" ? val[0] : String(val[0]);
+          } else if (typeof val === "string") {
+            fe[key] = val;
+          }
+        }
+        setFieldErrors(fe);
+      }
     } finally {
       setSaving(false);
     }
@@ -173,56 +194,64 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
         <FormGrid>
           {resource.fields
             .filter((f) => !f.showWhen || f.showWhen(form))
-            .map((f) => (
-              <Field
-                key={f.name}
-                label={f.label}
-                required={f.required}
-                hint={f.hint}
-                className={f.span === 2 ? "sm:col-span-2" : ""}
-              >
-                {f.type === "textarea" ? (
-                  <TextArea
-                    value={form[f.name] ?? ""}
-                    onChange={(e) => set(f.name, e.target.value)}
-                    placeholder={f.placeholder}
-                    required={f.required}
-                    rows={f.rows || 3}
-                  />
-                ) : f.type === "checkbox" ? (
-                  <span className="flex h-[38px] items-center gap-2 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 accent-brand-700"
-                      checked={Boolean(form[f.name])}
-                      onChange={(e) => set(f.name, e.target.checked)}
+            .map((f) => {
+              const errCls = fieldErrors[f.name]
+                ? "!border-red-400 focus:!border-red-500 focus:!ring-red-100"
+                : "";
+              return (
+                <Field
+                  key={f.name}
+                  label={f.label}
+                  required={f.required}
+                  hint={f.hint}
+                  error={fieldErrors[f.name]}
+                  className={f.span === 2 ? "sm:col-span-2" : ""}
+                >
+                  {f.type === "textarea" ? (
+                    <TextArea
+                      value={form[f.name] ?? ""}
+                      onChange={(e) => set(f.name, e.target.value)}
+                      placeholder={f.placeholder}
+                      required={f.required}
+                      rows={f.rows || 3}
+                      className={errCls}
                     />
-                    {f.checkboxLabel || "Enabled"}
-                  </span>
-                ) : f.type === "select" || f.type === "lookup" ? (
-                  <Select
-                    value={form[f.name] ?? ""}
-                    onChange={(e) => set(f.name, e.target.value)}
-                    options={fieldOptions(f, lookups, form)}
-                    placeholder={f.placeholder || "Select…"}
-                    required={f.required}
-                  />
-                ) : (
-                  <TextInput
-                    type={inputType(f)}
-                    value={form[f.name] ?? ""}
-                    onChange={(e) => set(f.name, e.target.value)}
-                    placeholder={f.placeholder}
-                    required={f.required}
-                    min={f.min}
-                    step={f.step}
-                  />
-                )}
-              </Field>
-            ))}
+                  ) : f.type === "checkbox" ? (
+                    <span className="flex h-[38px] items-center gap-2 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 accent-brand-700"
+                        checked={Boolean(form[f.name])}
+                        onChange={(e) => set(f.name, e.target.checked)}
+                      />
+                      {f.checkboxLabel || "Enabled"}
+                    </span>
+                  ) : f.type === "select" || f.type === "lookup" ? (
+                    <Select
+                      value={form[f.name] ?? ""}
+                      onChange={(e) => set(f.name, e.target.value)}
+                      options={fieldOptions(f, lookups, form)}
+                      placeholder={f.placeholder || "Select…"}
+                      required={f.required}
+                      className={errCls}
+                    />
+                  ) : (
+                    <TextInput
+                      type={inputType(f)}
+                      value={form[f.name] ?? ""}
+                      onChange={(e) => set(f.name, e.target.value)}
+                      placeholder={f.placeholder}
+                      required={f.required}
+                      min={f.min}
+                      step={f.step}
+                      className={errCls}
+                    />
+                  )}
+                </Field>
+              );
+            })}
         </FormGrid>
       </form>
     </Modal>
   );
 }
-

@@ -46,6 +46,29 @@ export function StudentsPage() {
   const toast = useToast();
   const [issued, setIssued] = useState(null);
   const [revoking, setRevoking] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  async function sendActivationEmail(data) {
+    const item = data || issued;
+    if (!item) return;
+    const studentId = item.student?.id || item.id;
+    if (!studentId) return;
+    setSendingEmail(true);
+    try {
+      const res = await api(`/admin/students/${studentId}/send-activation-email/`, {
+        method: "POST",
+        body: {
+          activation_token: item.activation_token,
+          activation_link: item.activation_link,
+        },
+      });
+      toast.success(`Activation key sent as email to ${res.email || item.student?.email || "student"}.`);
+    } catch (err) {
+      toast.error(err.message || "Failed to send activation email.");
+    } finally {
+      setSendingEmail(false);
+    }
+  }
   const [csvResult, setCsvResult] = useState(null);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef(null);
@@ -121,7 +144,12 @@ export function StudentsPage() {
           singular: "Student",
           canWrite,
           fields: studentFields,
-          onSaved: () => invalidateLookups("students"),
+          onSaved: (created, isEdit) => {
+            invalidateLookups("students");
+            if (!isEdit && created?.activation_token) {
+              setIssued({ ...created, student: created });
+            }
+          },
           filters: [
             {
               name: "status",
@@ -159,6 +187,30 @@ export function StudentsPage() {
                 <Button size="sm" variant="secondary" onClick={() => issue(row, ctx)}>
                   {row.matricule ? "Re-issue code" : "Issue matricule"}
                 </Button>
+                {row.status === "pending" ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon="mail"
+                    onClick={async () => {
+                      try {
+                        const res = await api(`/admin/students/${row.id}/send-activation-email/`, {
+                          method: "POST",
+                          body: {},
+                        });
+                        toast.success(`Activation key sent as email to ${res.email || row.email}.`);
+                        if (res.reissued) {
+                          setIssued({ ...res, student: row });
+                          ctx.reload?.();
+                        }
+                      } catch (err) {
+                        toast.error(err.message || "Failed to send activation email.");
+                      }
+                    }}
+                  >
+                    Send activation key as email
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="dangerGhost" onClick={() => setRevoking(row)}>
                   Revoke
                 </Button>
@@ -172,7 +224,19 @@ export function StudentsPage() {
         onClose={() => setIssued(null)}
         title="Activation details — shown once"
         subtitle={issued ? `${issued.student?.full_name || ""} · ${issued.matricule || ""}` : ""}
-        footer={<Button onClick={() => setIssued(null)}>Done</Button>}
+        footer={
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="secondary"
+              icon="mail"
+              loading={sendingEmail}
+              onClick={() => sendActivationEmail()}
+            >
+              Send activation key as email
+            </Button>
+            <Button onClick={() => setIssued(null)}>Done</Button>
+          </div>
+        }
       >
         {issued ? (
           <div className="space-y-3 text-sm">

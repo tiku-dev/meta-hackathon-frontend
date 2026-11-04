@@ -91,6 +91,16 @@ async function refreshAccessToken() {
   return refreshPromise;
 }
 
+function sanitizeErrorMessage(msg) {
+  if (typeof msg !== "string") return "Request failed.";
+  let cleaned = msg.trim();
+  if (cleaned.includes("ErrorDetail(")) {
+    cleaned = cleaned.replace(/ErrorDetail\(string=['"]([^'"]+)['"][^)]*\)/g, "$1");
+    cleaned = cleaned.replace(/^\[['"]?|['"]?\]$/g, "").trim();
+  }
+  return cleaned || "Request failed.";
+}
+
 async function toError(res) {
   let payload;
   try {
@@ -99,17 +109,21 @@ async function toError(res) {
     payload = null;
   }
   if (payload?.error) {
-    return new ApiError(payload.error.message || "Request failed.", {
+    return new ApiError(sanitizeErrorMessage(payload.error.message), {
       code: payload.error.code || "error",
       status: payload.error.status ?? res.status,
       details: payload.error.details,
     });
   }
-  const message =
+  const rawMsg =
     payload?.detail ||
-    (payload ? JSON.stringify(payload).slice(0, 300) : res.statusText) ||
+    (payload
+      ? typeof payload === "object"
+        ? Object.values(payload).flat().join(" ")
+        : JSON.stringify(payload).slice(0, 300)
+      : res.statusText) ||
     "Request failed.";
-  return new ApiError(String(message), { status: res.status, details: payload });
+  return new ApiError(sanitizeErrorMessage(rawMsg), { status: res.status, details: payload });
 }
 
 export async function api(path, options = {}) {
@@ -160,19 +174,20 @@ async function authedBlob(path) {
 }
 
 /** Authenticated blob download (PDF/CSV) triggered as a file save. */
-export async function downloadFile(path, filename = "download") {
-  const res = await authedBlob(path);
-  const blob = await res.blob();
-  const disposition = res.headers.get("Content-Disposition") || "";
-  const match = disposition.match(/filename="?([^"]+)"?/);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = match?.[1] || filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+export function downloadFile(path, filename = "download") {
+  return authedBlob(path).then(async (res) => {
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = match?.[1] || filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  });
 }
 
 /** Open an authenticated file (e.g. a PDF) in a new tab. */
@@ -197,4 +212,3 @@ export const qs = (params = {}) => {
   const s = query.toString();
   return s ? `?${s}` : "";
 };
-

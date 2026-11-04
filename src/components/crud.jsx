@@ -182,9 +182,9 @@ export function ResourcePage({ resource }) {
         record={editing}
         lookups={lookupRows}
         onClose={() => setEditing(null)}
-        onSaved={() => {
+        onSaved={(data, isEdit) => {
           setEditing(null);
-          resource.onSaved?.();
+          resource.onSaved?.(data, isEdit);
           list.reload();
         }}
       />
