@@ -64,6 +64,9 @@ export function labelById(rows, id, fallback = "—") {
   if (id === null || id === undefined || id === "") return fallback;
   const row = rows.find((r) => String(r.id) === String(id));
   if (!row) return `#${id}`;
+  if (row.program_name && row.label) {
+    return `${row.program_name} — ${row.label}`;
+  }
   if (row.academic_year_label && row.semester_type) {
     return `${row.academic_year_label} · ${row.semester_type}`;
   }

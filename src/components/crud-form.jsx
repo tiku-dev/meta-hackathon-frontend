@@ -12,11 +12,15 @@ import {
 import { api } from "../lib/api";
 import { toLocalInput } from "../lib/format";
 
-export function optionLabel(field, row) {
+export function optionLabel(field, row, lookups) {
   if (field?.optionLabel) return field.optionLabel(row);
+  const progName =
+    row.program_name ||
+    (row.program && lookups?.programs ? lookups.programs.find((p) => String(p.id) === String(row.program))?.name : null);
   return (
     row.full_name ||
     (row.course_code ? `${row.course_code} — ${row.course_title || ""}`.trim() : null) ||
+    (progName && row.label ? `${progName} — ${row.label}` : null) ||
     row.name ||
     row.label ||
     row.code ||
@@ -26,16 +30,27 @@ export function optionLabel(field, row) {
   );
 }
 
-function fieldOptions(field, lookups) {
+function fieldOptions(field, lookups, form) {
   if (field.options) return field.options;
   if (field.lookup) {
-    return (lookups[field.lookup] || []).map((r) => ({
+    let rows = lookups[field.lookup] || [];
+    const isLevelField =
+      field.lookup === "levels" || field.name === "current_level" || field.name === "level";
+    if (isLevelField && form?.program) {
+      rows = rows.filter((r) => String(r.program) === String(form.program));
+      return rows.map((r) => ({
+        value: r.id,
+        label: r.label,
+      }));
+    }
+    return rows.map((r) => ({
       value: r.id,
-      label: optionLabel(field, r),
+      label: optionLabel(field, r, lookups),
     }));
   }
   return [];
 }
+
 
 /**
  * Create/edit modal generated from a resource `fields` config.
@@ -68,7 +83,26 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
 
   if (!record || !form) return null;
   const isEdit = Boolean(record.id);
-  const set = (name, value) => setForm((s) => ({ ...s, [name]: value }));
+  const set = (name, value) => {
+    setForm((s) => {
+      const next = { ...s, [name]: value };
+      if (name === "program") {
+        if (next.current_level) {
+          const lvl = (lookups?.levels || []).find((l) => String(l.id) === String(next.current_level));
+          if (lvl && String(lvl.program) !== String(value)) {
+            next.current_level = "";
+          }
+        }
+        if (next.level) {
+          const lvl = (lookups?.levels || []).find((l) => String(l.id) === String(next.level));
+          if (lvl && String(lvl.program) !== String(value)) {
+            next.level = "";
+          }
+        }
+      }
+      return next;
+    });
+  };
 
   async function submit(e) {
     e.preventDefault();
@@ -169,7 +203,7 @@ export function ResourceFormModal({ resource, record, lookups, onClose, onSaved 
                   <Select
                     value={form[f.name] ?? ""}
                     onChange={(e) => set(f.name, e.target.value)}
-                    options={fieldOptions(f, lookups)}
+                    options={fieldOptions(f, lookups, form)}
                     placeholder={f.placeholder || "Select…"}
                     required={f.required}
                   />

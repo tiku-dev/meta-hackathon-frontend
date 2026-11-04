@@ -121,6 +121,7 @@ export function ResourcePage({ resource }) {
                 filter={f}
                 rows={f.lookup ? lookupRows[f.lookup] : null}
                 value={filterValues[f.name] || ""}
+                lookups={lookupRows}
                 onChange={(v) => setFilterValues((s) => ({ ...s, [f.name]: v }))}
               />
             ))}
@@ -202,9 +203,9 @@ export function ResourcePage({ resource }) {
   );
 }
 
-function FilterSelect({ filter, rows, value, onChange }) {
+function FilterSelect({ filter, rows, value, onChange, lookups }) {
   const options =
-    filter.options || (rows || []).map((r) => ({ value: r.id, label: optionLabel(filter, r) }));
+    filter.options || (rows || []).map((r) => ({ value: r.id, label: optionLabel(filter, r, lookups) }));
   return (
     <Select
       value={value}

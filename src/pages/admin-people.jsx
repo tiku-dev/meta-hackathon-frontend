@@ -16,13 +16,24 @@ import { formatDate } from "../lib/format";
 
 /* ------------------------------- Students ------------------------------- */
 
+const GENDER_OPTIONS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+];
+
 const studentFields = [
   { name: "first_name", label: "First name", required: true },
   { name: "last_name", label: "Last name", required: true },
   { name: "email", label: "Email", type: "email", required: true },
   { name: "phone", label: "Phone" },
   { name: "date_of_birth", label: "Date of birth", type: "date" },
-  { name: "gender", label: "Gender" },
+  {
+    name: "gender",
+    label: "Gender",
+    type: "select",
+    required: true,
+    options: GENDER_OPTIONS,
+  },
   { name: "address", label: "Address", span: 2 },
   { name: "program", label: "Program", type: "lookup", lookup: "programs" },
   { name: "current_level", label: "Current level", type: "lookup", lookup: "levels" },
