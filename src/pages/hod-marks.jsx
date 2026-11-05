@@ -770,7 +770,7 @@ function FormStudentRow({ index, student: s, value, onChange, saving, caMax, exa
             <span className="block text-xs text-amber-600">
               Fees not cleared
               {s.fee?.balance != null
-                ? ` · balance ${formatMoney(s.fee.balance, s.fee.currency || "XAF")}`
+                ? ` · balance ${formatMoney(s.fee.balance, s.fee.currency || "USD")}`
                 : ""}
             </span>
           ) : null}
@@ -874,7 +874,7 @@ function FormSaveReport({ report }) {
           {
             key: "balance",
             header: "Fee balance",
-            render: (r) => (r.balance != null ? formatMoney(r.balance, r.currency || "XAF") : "No invoice"),
+            render: (r) => (r.balance != null ? formatMoney(r.balance, r.currency || "USD") : "No invoice"),
           },
           { key: "error", header: "Reason", render: (r) => <span className="text-amber-700">{r.error}</span> },
         ]}
@@ -972,7 +972,7 @@ function UploadReport({ report, mode }) {
             key: "balance",
             header: "Fee balance",
             render: (r) =>
-              r.balance != null ? formatMoney(r.balance, r.currency || "XAF") : "No invoice",
+              r.balance != null ? formatMoney(r.balance, r.currency || "USD") : "No invoice",
           },
           { key: "error", header: "Why held", render: (r) => <span className="text-amber-700">{r.error}</span> },
         ]}

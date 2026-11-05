@@ -39,6 +39,18 @@ const studentFields = [
   { name: "current_level", label: "Current level", type: "lookup", lookup: "levels" },
   { name: "admission_year", label: "Admission year", type: "lookup", lookup: "years" },
   { name: "student_category", label: "Student category", placeholder: "regular" },
+  {
+    name: "status",
+    label: "Status",
+    type: "select",
+    options: [
+      { value: "pending", label: "Pending activation" },
+      { value: "active", label: "Active" },
+      { value: "suspended", label: "Suspended" },
+      { value: "withdrawn", label: "Withdrawn" },
+      { value: "graduated", label: "Graduated" },
+    ],
+  },
 ];
 
 export function StudentsPage() {
@@ -46,6 +58,7 @@ export function StudentsPage() {
   const toast = useToast();
   const [issued, setIssued] = useState(null);
   const [revoking, setRevoking] = useState(null);
+  const [suspending, setSuspending] = useState(null);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   async function sendActivationEmail(data) {
@@ -87,9 +100,11 @@ export function StudentsPage() {
 
   async function revoke() {
     if (!revoking) return;
+    const student = revoking.student || revoking;
     try {
-      await api(`/admin/students/${revoking.id}/revoke/`, { method: "POST", body: { reason: "" } });
+      await api(`/admin/students/${student.id}/revoke/`, { method: "POST", body: { reason: "" } });
       toast.success("Student revoked. The matricule can never be reused.");
+      revoking.reload?.();
       setRevoking(null);
     } catch (err) {
       toast.error(err.message);
@@ -211,7 +226,34 @@ export function StudentsPage() {
                     Send activation key as email
                   </Button>
                 ) : null}
-                <Button size="sm" variant="dangerGhost" onClick={() => setRevoking(row)}>
+                {row.status === "suspended" ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon="check"
+                    onClick={async () => {
+                      try {
+                        await api(`/admin/students/${row.id}/unsuspend/`, { method: "POST", body: {} });
+                        toast.success("Student unsuspended and restored to active.");
+                        ctx.reload?.();
+                      } catch (err) {
+                        toast.error(err.message);
+                      }
+                    }}
+                  >
+                    Unsuspend
+                  </Button>
+                ) : row.status === "active" ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon="alert"
+                    onClick={() => setSuspending({ student: row, reload: ctx.reload })}
+                  >
+                    Suspend
+                  </Button>
+                ) : null}
+                <Button size="sm" variant="dangerGhost" onClick={() => setRevoking({ student: row, reload: ctx.reload })}>
                   Revoke
                 </Button>
               </>
@@ -260,8 +302,29 @@ export function StudentsPage() {
         onConfirm={revoke}
         danger
         title="Revoke this student?"
-        message={`This blocks login and future activation for ${revoking?.full_name || "the student"}. The matricule ${revoking?.matricule || ""} is never reused.`}
+        message={`This blocks login and future activation for ${(revoking?.student || revoking)?.full_name || "the student"}. The matricule ${(revoking?.student || revoking)?.matricule || ""} is never reused.`}
         confirmLabel="Revoke student"
+      />
+
+      <ConfirmDialog
+        open={Boolean(suspending)}
+        onClose={() => setSuspending(null)}
+        onConfirm={async () => {
+          if (!suspending) return;
+          const student = suspending.student || suspending;
+          try {
+            await api(`/admin/students/${student.id}/suspend/`, { method: "POST", body: {} });
+            toast.success("Student suspended. Login and access blocked.");
+            suspending.reload?.();
+            setSuspending(null);
+          } catch (err) {
+            toast.error(err.message);
+          }
+        }}
+        danger
+        title="Suspend this student?"
+        message={`This temporarily blocks login and course access for ${(suspending?.student || suspending)?.full_name || "the student"}. You can unsuspend them at any time.`}
+        confirmLabel="Suspend student"
       />
 
       <Modal open={Boolean(csvResult)} onClose={() => setCsvResult(null)} wide title="CSV import result" footer={<Button onClick={() => setCsvResult(null)}>Close</Button>}>

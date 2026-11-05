@@ -297,6 +297,7 @@ export function FeesPage() {
   const [paying, setPaying] = useState(null);
   const [checking, setChecking] = useState("");
   const [lastAttempt, setLastAttempt] = useState(null);
+  const [chosenMethods, setChosenMethods] = useState({});
 
   const data = fees.data || {};
   const invoices = data.invoices || [];
@@ -323,7 +324,9 @@ export function FeesPage() {
       toast.error("The local payment simulator is not enabled on this server.");
       return null;
     }
-    setPaying(`${invoice.id}:${simulate ? "mock" : selectedProvider || "default"}`);
+    const methodKey = simulate ? "mock" : selectedProvider || "default";
+    setChosenMethods((prev) => ({ ...prev, [invoice.id]: methodKey }));
+    setPaying(`${invoice.id}:${methodKey}`);
     try {
       const attempt = await api(`/invoices/${invoice.id}/payments`, {
         method: "POST",
@@ -348,8 +351,18 @@ export function FeesPage() {
         fees.reload();
         receipts.reload();
       } else if (attempt.checkout_url) {
-        toast.info(`Opening ${attempt.provider === "stripe" ? "Stripe" : "the provider"} checkout…`);
-        window.open(attempt.checkout_url, "_blank", "noopener");
+        toast.info(
+          `Opening ${attempt.provider === "stripe" ? "Stripe" : "Notch Pay"} checkout…`,
+        );
+        let opened = null;
+        try {
+          opened = window.open(attempt.checkout_url, "_blank");
+        } catch {
+          opened = null;
+        }
+        if (!opened || opened.closed || typeof opened.closed === "undefined") {
+          window.location.assign(attempt.checkout_url);
+        }
       } else {
         toast.info(
           `Payment ${attempt.reference} created (${attempt.provider}). Use “Check status” after paying.`,
@@ -364,12 +377,39 @@ export function FeesPage() {
     }
   }
 
+  async function switchPaymentMethod(invoice, activeAttempt) {
+    if (activeAttempt?.reference && activeAttempt.status === "pending") {
+      try {
+        await api(`/payments/${encodeURIComponent(activeAttempt.reference)}/cancel`, {
+          method: "POST",
+        });
+      } catch {
+        // Ignore if cancel fails
+      }
+    }
+    setChosenMethods((prev) => {
+      const next = { ...prev };
+      delete next[invoice.id];
+      return next;
+    });
+    setLastAttempt(null);
+    fees.reload();
+    toast.info("Payment method reset. You can now choose another payment method.");
+  }
+
   async function checkStatus(reference) {
     setChecking(reference);
     try {
       const attempt = await api(`/payments/${encodeURIComponent(reference)}/status`);
       setLastAttempt(attempt);
       toast.info(`Payment ${reference}: ${attempt.status}`);
+      if (attempt.status === "failed" || attempt.status === "cancelled") {
+        setChosenMethods((prev) => {
+          const next = { ...prev };
+          delete next[attempt.invoice_id];
+          return next;
+        });
+      }
       fees.reload();
       receipts.reload();
     } catch (err) {
@@ -432,6 +472,31 @@ export function FeesPage() {
         {invoices.map((inv) => {
           const isRegFeeInvoice = regFeeInvoice && inv.id === regFeeInvoice.id;
           const lockedByRegFee = regFeeOwed && !isRegFeeInvoice;
+
+          const activeAttempt =
+            (lastAttempt && lastAttempt.invoice_id === inv.id
+              ? lastAttempt
+              : null) ||
+            inv.pending_attempt ||
+            null;
+
+          const payingMethod =
+            paying && paying.startsWith(`${inv.id}:`) ? paying.split(":")[1] : null;
+
+          const chosenMethod =
+            payingMethod ||
+            chosenMethods[inv.id] ||
+            (activeAttempt && activeAttempt.status === "pending" ? activeAttempt.provider : null);
+
+          const isAnyChosen = Boolean(chosenMethod);
+
+          const isStripeDisabled =
+            (isAnyChosen && chosenMethod !== "stripe") || (Boolean(paying) && payingMethod !== "stripe");
+          const isNotchPayDisabled =
+            (isAnyChosen && chosenMethod !== "notchpay") || (Boolean(paying) && payingMethod !== "notchpay");
+          const isMockDisabled =
+            (isAnyChosen && chosenMethod !== "mock") || (Boolean(paying) && payingMethod !== "mock");
+
           return (
           <Card key={inv.id}>
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -478,12 +543,15 @@ export function FeesPage() {
                 above first. It is charged once only.
               </p>
             ) : num(inv.balance) > 0 && inv.status !== "waived" && inv.status !== "cancelled" ? (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4">
+                <div className="flex flex-wrap items-center gap-2">
                 {stripeEnabled ? (
                   <Button
                     variant="gold"
                     icon="card"
                     loading={paying === `${inv.id}:stripe`}
+                    disabled={isStripeDisabled}
+                    title={isStripeDisabled ? "Disabled because another payment method was chosen" : undefined}
                     onClick={() => startPayment(inv, { provider: "stripe" })}
                   >
                     Pay {formatMoney(inv.balance, inv.currency)} with Stripe
@@ -495,9 +563,11 @@ export function FeesPage() {
                     variant="secondary"
                     icon="external"
                     loading={paying === `${inv.id}:notchpay`}
+                    disabled={isNotchPayDisabled}
+                    title={isNotchPayDisabled ? "Disabled because another payment method was chosen" : undefined}
                     onClick={() => startPayment(inv, { provider: "notchpay" })}
                   >
-                    Pay with Notch Pay
+                    Pay with Notch Pay (converts to XAF)
                   </Button>
                 ) : null}
                 {mockEnabled ? (
@@ -505,6 +575,8 @@ export function FeesPage() {
                     variant="ghost"
                     icon="wallet"
                     loading={paying === `${inv.id}:mock`}
+                    disabled={isMockDisabled}
+                    title={isMockDisabled ? "Disabled because another payment method was chosen" : undefined}
                     onClick={() => startPayment(inv, { provider: "mock", simulate: true })}
                   >
                     Simulate payment locally
@@ -515,15 +587,45 @@ export function FeesPage() {
                     No online payment method is enabled on the server right now — please contact the finance office.
                   </span>
                 ) : null}
-                <Button
-                  variant="ghost"
-                  icon="refresh"
-                  loading={Boolean(checking)}
-                  disabled={!lastAttempt}
-                  onClick={() => lastAttempt && checkStatus(lastAttempt.reference)}
-                >
-                  {lastAttempt ? `Check status (${lastAttempt.status})` : "Check status"}
-                </Button>
+                {activeAttempt ? (
+                  <Button
+                    variant="ghost"
+                    icon="refresh"
+                    loading={Boolean(checking)}
+                    disabled={Boolean(paying)}
+                    onClick={() => checkStatus(activeAttempt.reference)}
+                  >
+                    Check status ({activeAttempt.status})
+                  </Button>
+                ) : null}
+                {activeAttempt?.checkout_url && activeAttempt?.status === "pending" ? (
+                  <a
+                    href={activeAttempt.checkout_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
+                  >
+                    <Icon name="external" size={14} />
+                    Open checkout page
+                  </a>
+                ) : null}
+                {isAnyChosen ? (
+                  <Button
+                    variant="ghost"
+                    icon="refresh"
+                    disabled={Boolean(paying)}
+                    onClick={() => switchPaymentMethod(inv, activeAttempt)}
+                    title="Reset choice and enable all payment methods"
+                  >
+                    Switch payment method
+                  </Button>
+                ) : null}
+                </div>
+                {isAnyChosen ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Selected method: <strong className="font-semibold text-slate-700 uppercase">{chosenMethod}</strong>. The other payment method is disabled. Click “Switch payment method” to choose differently.
+                  </p>
+                ) : null}
               </div>
             ) : (
               <p className="mt-4 flex items-center gap-2 text-sm font-medium text-brand-700">
@@ -531,10 +633,7 @@ export function FeesPage() {
               </p>
             )}
             <p className="mt-3 text-xs leading-relaxed text-slate-400">
-              Stripe and Notch Pay open the provider’s hosted checkout in test/sandbox mode when
-              test keys are configured. The local simulator is only shown when explicitly enabled
-              on the server. Credit is applied only after the server verifies the payment
-              reference, amount and currency.
+              Stripe charges directly in USD. Notch Pay accepts USD and automatically converts to XAF at checkout for Mobile Money (MTN / Orange). Credit is applied after the server verifies the payment with the provider.
             </p>
           </Card>
           );

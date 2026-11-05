@@ -35,6 +35,14 @@ function notifyAuthChange() {
   });
 }
 
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === TOKEN_KEYS.access || e.key === TOKEN_KEYS.refresh) {
+      notifyAuthChange();
+    }
+  });
+}
+
 export const tokens = {
   get access() {
     return localStorage.getItem(TOKEN_KEYS.access);

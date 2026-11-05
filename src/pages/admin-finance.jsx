@@ -40,8 +40,8 @@ const feeFields = [
     label: "Currency",
     type: "select",
     options: [
+      { value: "USD", label: "USD ($)" },
       { value: "XAF", label: "XAF" },
-      { value: "USD", label: "USD" },
     ],
   },
   {
@@ -76,8 +76,8 @@ const invoiceFields = [
     label: "Currency",
     type: "select",
     options: [
+      { value: "USD", label: "USD ($)" },
       { value: "XAF", label: "XAF" },
-      { value: "USD", label: "USD" },
     ],
   },
   { name: "due_date", label: "Due date", type: "datetime" },
@@ -95,8 +95,8 @@ const adjustmentFields = [
     label: "Currency",
     type: "select",
     options: [
+      { value: "USD", label: "USD ($)" },
       { value: "XAF", label: "XAF" },
-      { value: "USD", label: "USD" },
     ],
   },
   { name: "method", label: "Method", required: true, placeholder: "cash / bank transfer / …" },

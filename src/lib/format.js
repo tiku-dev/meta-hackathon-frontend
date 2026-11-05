@@ -5,13 +5,15 @@ export const num = (value) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-export function formatMoney(value, currency = "XAF") {
+export function formatMoney(value, currency = "USD") {
   if (value === null || value === undefined || value === "") return "—";
   const n = num(value);
   const formatted = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: Number.isInteger(n) ? 0 : 2,
   }).format(n);
-  return `${formatted} ${currency || "XAF"}`;
+  const curr = (currency || "USD").toUpperCase();
+  if (curr === "USD") return `$${formatted}`;
+  return `${formatted} ${curr}`;
 }
 
 export function formatNumber(value) {
