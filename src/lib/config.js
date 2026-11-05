@@ -1,12 +1,18 @@
 /**
  * Runtime configuration.
  *
- * API base: by default the app talks to the Vite dev proxy (same-origin
- * `/api`), which forwards to the Django backend on 127.0.0.1:8000.
- * Set VITE_API_BASE_URL (e.g. http://127.0.0.1:8000/api) to bypass the proxy.
+ * API base:
+ * - When VITE_API_BASE_URL is provided, use it.
+ * - In production builds, default to the deployed backend URL:
+ *   "https://meta-hackathon-backend-wine.vercel.app/api"
+ * - In development, default to "/api" (proxied to 127.0.0.1:8000 by Vite).
  */
+const DEFAULT_API_BASE_URL = import.meta.env
+  ? "https://meta-hackathon-backend-wine.vercel.app/api"
+  : "/api";
+
 export const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "/api"
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
 ).replace(/\/+$/, "");
 
 /** Origin used for absolute download URLs / opening statements. */
